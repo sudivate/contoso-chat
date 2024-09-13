@@ -8,3 +8,4 @@ jsonlines
 prompty
 prompty[azure]
 nbconvert
+Jinja2==3.1.4
