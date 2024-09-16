@@ -3,12 +3,11 @@ import os
 from pathlib import Path
 from fastapi import FastAPI, Request
 from dotenv import load_dotenv
-from prompty.tracer import trace
+from opentelemetry import trace
 from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import metrics
 
 from .contoso_chat.chat_request import get_response
-from .session_span_processor import get_session_id, set_session_id
 from .telemetry import setup_telemetry
 from azure.core.tracing.decorator import distributed_trace
 
@@ -45,16 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.middleware("http")
-async def add_session_id(request: Request, call_next):
-    session_id_ctx = get_session_id()
-    if not session_id_ctx:
-        session_id = request.cookies.get('sessionid')
-        if session_id:
-            set_session_id(session_id)
-    response = await call_next(request)
-    return response
-
 setup_telemetry(app)
 
 logger = logging.getLogger(__name__)
@@ -74,6 +63,10 @@ def root():
 
 @app.post("/api/create_response")
 @distributed_trace(name_of_span="create_response")
-def create_response(question: str, customer_id: str, chat_history: str) -> dict:
+def create_response(question: str, customer_id: str, chat_history: str, request: Request) -> dict:
+    session_id = request.cookies.get('sessionid')
+    if session_id:
+        span = trace.get_current_span()
+        span.set_attribute("session.id", session_id)
     result = get_response(customer_id, question, chat_history)
     return result
