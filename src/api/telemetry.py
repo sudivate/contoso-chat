@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from azure.core.tracing import AiInferenceApiInstrumentor
-from azure.core.tracing.decorator import distributed_trace
+from .session_span_processor import SessionSpanProcessor
 
 
 def setup_azure_monitor_exporters(conn_str: str):
@@ -35,6 +35,7 @@ def setup_azure_monitor_exporters(conn_str: str):
         AzureMonitorTraceExporter.from_connection_string(conn_str)
     )
     tracer_provider.add_span_processor(processor)
+    tracer_provider.add_span_processor(SessionSpanProcessor())
 
     # Metrics
     exporter = AzureMonitorMetricExporter.from_connection_string(conn_str)
@@ -65,10 +66,11 @@ def setup_otlp_traces_exporter(endpoint: str):
 
     # Traces
     tracer_provider = TracerProvider(resource=resource)
+    trace.set_tracer_provider(tracer_provider)
     processor = BatchSpanProcessor(
         OTLPSpanExporter(endpoint=endpoint, insecure=True))
     tracer_provider.add_span_processor(processor)
-    trace.set_tracer_provider(tracer_provider)
+    tracer_provider.add_span_processor(SessionSpanProcessor())
 
     # Metrics
     exporter = OTLPMetricExporter(endpoint=endpoint, insecure=True)

@@ -1,13 +1,14 @@
 import logging
 import os
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from dotenv import load_dotenv
 from prompty.tracer import trace
 from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import metrics
 
 from .contoso_chat.chat_request import get_response
+from .session_span_processor import get_session_id, set_session_id
 from .telemetry import setup_telemetry
 from azure.core.tracing.decorator import distributed_trace
 
@@ -44,6 +45,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_session_id(request: Request, call_next):
+    session_id_ctx = get_session_id()
+    if not session_id_ctx:
+        session_id = request.cookies.get('sessionid')
+        if session_id:
+            set_session_id(session_id)
+    response = await call_next(request)
+    return response
+
 setup_telemetry(app)
 
 logger = logging.getLogger(__name__)
@@ -55,7 +66,7 @@ root_counter = meter.create_counter("root-hits")
 
 
 @app.get("/")
-async def root():
+def root():
     root_counter.add(1)
     logger.info("Hello from root endpoint")
     return {"message": "Hello World"}
