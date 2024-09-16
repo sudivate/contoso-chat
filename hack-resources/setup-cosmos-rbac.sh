@@ -3,6 +3,12 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# Check if the user is logged in to Azure CLI
+if ! az account show > /dev/null 2>&1; then
+    echo "You are not logged in to Azure CLI. Please run 'az login' to log in."
+    exit 1
+fi
+
 # Get the subscription ID
 AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 echo "Using Azure subscription ID: $AZURE_SUBSCRIPTION_ID"
