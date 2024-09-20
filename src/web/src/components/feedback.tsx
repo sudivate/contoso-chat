@@ -11,26 +11,13 @@ type Props = {
 
 export const Feedback = ({ responseId }: Props) => {
     var iconsVisible: Boolean = false;
-    var feedbackProvided: Boolean = false;
 
     if (responseId && responseId != '') {
         iconsVisible = true;
     }
 
-    var divIconsClass=clsx('', {
-        ['flex']: iconsVisible && !feedbackProvided,
-        ['hidden']: !iconsVisible || (iconsVisible && feedbackProvided)
-      })
-
-    var divMessageClass=clsx('', {
-        ['hidden']: !iconsVisible || (iconsVisible && !feedbackProvided),
-        ['flex']: iconsVisible && feedbackProvided
-      })
-
-
     async function ProvideFeedback(feedback: MessageFeedback) {
         await sendFeedback(feedback);
-        feedbackProvided = true;
     }
 
     async function OnThumbsUpClick() {
@@ -44,19 +31,19 @@ export const Feedback = ({ responseId }: Props) => {
         await ProvideFeedback(negativeFeedback);
     }
 
-    return (
-        <div>
-            {responseId ? <p>&nbsp;</p> : ''}
-            <div className={divIconsClass}>
-                {iconsVisible ? <FaRegThumbsUp size='24px' onClick={OnThumbsUpClick} /> : ''}
-                &nbsp;
-                {iconsVisible ? <FaRegThumbsDown size='24px' onClick={OnThumbsDownClick} /> : ''}
+
+    if (iconsVisible) {
+        return (
+            <div>
+                <p>&nbsp;</p>
+                <div className='flex'>
+                    <FaRegThumbsUp size='20px' onClick={OnThumbsUpClick} />
+                    &nbsp;
+                    <FaRegThumbsDown size='20px' onClick={OnThumbsDownClick} />
+                </div>
             </div>
-            <div className={divMessageClass}>
-                {!iconsVisible ? 'Thank you for your feedback!' : ''}
-            </div>
-        </div>
-    );
+        );
+    }
 };
 
 export default Feedback;
