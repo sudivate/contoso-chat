@@ -3,6 +3,7 @@ export interface ChatTurn {
   avatar: string;
   image: string | null;
   message: string;
+  responseId: string;
   status: "waiting" | "done";
   type: "user" | "assistant";
 };
@@ -45,4 +46,11 @@ export interface Citation {
 export interface GroundedMessage {
   message: string;
   citations: Citation[];
+  responseId: string;
 };
+
+export interface MessageFeedback {
+  responseId: string
+  feedback: number
+  extra: Record<string, any>
+}

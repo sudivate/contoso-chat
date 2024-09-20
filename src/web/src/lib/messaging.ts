@@ -28,6 +28,7 @@ export const sendGroundedMessage = async (
     message: data.message,
     status: "done",
     type: "assistant",
+    responseId: data.responseId,
     avatar: "",
     image: null,
   };
@@ -63,6 +64,7 @@ export const sendPromptFlowMessage = async (
     message: data["answer"],
     status: "done",
     type: "assistant",
+    responseId: data.responseId,
     avatar: "",
     image: null,
   };
@@ -110,6 +112,7 @@ export const sendVisualMessage = async (
     message: data["answer"],
     status: "done",
     type: "assistant",
+    responseId: data.responseId,
     avatar: "",
     image: null,
   };
