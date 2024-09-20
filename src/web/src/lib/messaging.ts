@@ -59,11 +59,12 @@ export const sendPromptFlowMessage = async (
     body: JSON.stringify(body),
   })
   
+  let data;
   let answer = ""
   if (!response.ok) {
     answer = "I'm sorry, there was a problem."
   } else {
-    const data = await response.json();
+    data = await response.json();
     answer = data['answer']
   }
 
