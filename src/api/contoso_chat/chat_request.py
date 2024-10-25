@@ -16,6 +16,7 @@ from opentelemetry._logs import set_logger_provider
 from opentelemetry._events import set_event_logger_provider, EventLoggerProvider
 from opentelemetry._events import Attributes, EventLoggerProvider, EventLogger, Event, get_event_logger_provider
 from opentelemetry.sdk._logs.export import SimpleLogRecordProcessor, ConsoleLogExporter
+from openai import AzureOpenAI
 
 
 load_dotenv()
@@ -45,13 +46,19 @@ def get_response(customerId: str, question: str, chat_history: str) -> dict:
     endpoint = "{}openai/deployments/{}".format(
         os.environ['AZURE_OPENAI_ENDPOINT'], os.environ['AZURE_OPENAI_CHAT_DEPLOYMENT'])
 
-    client = ChatCompletionsClient(
-        endpoint=endpoint,
-        credential=DefaultAzureCredential(
-            exclude_interactive_browser_credential=False),
-        credential_scopes=["https://cognitiveservices.azure.com/.default"],
-        api_version="2023-03-15-preview",
-        logging_enable=True,
+    # client = ChatCompletionsClient(
+    #     endpoint=endpoint,
+    #     credential=DefaultAzureCredential(
+    #         exclude_interactive_browser_credential=False),
+    #     credential_scopes=["https://cognitiveservices.azure.com/.default"],
+    #     api_version="2023-03-15-preview",
+    #     logging_enable=True,
+    # )
+    # Azure OpenAI
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
 
     customer = get_customer(customerId)
@@ -93,7 +100,9 @@ def get_response(customerId: str, question: str, chat_history: str) -> dict:
 
             messages.append(UserMessage(content=question))
 
-            response = client.complete(messages=messages)
+            # response = client.complete(messages=messages)
+            response = client.chat.completions.create(
+                model=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"), messages=messages)
 
         response_content = response.choices[0].message.content
 

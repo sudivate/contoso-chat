@@ -15,6 +15,7 @@ from azure.ai.inference import ChatCompletionsClient, EmbeddingsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from jinja2 import Template
 from opentelemetry import trace
+from openai import AzureOpenAI
 
 load_dotenv()
 
@@ -25,15 +26,23 @@ def generate_embeddings(queries: List[str]) -> str:
     endpoint = "{}openai/deployments/{}".format(
         os.environ['AZURE_OPENAI_ENDPOINT'], os.environ['AZURE_EMBEDDING_NAME'])
 
-    client = EmbeddingsClient(
-        endpoint=endpoint,
-        credential=DefaultAzureCredential(
-            exclude_interactive_browser_credential=False),
-        credential_scopes=["https://cognitiveservices.azure.com/.default"],
-        api_version="2023-05-15",
-        logging_enable=True,
+    # client = EmbeddingsClient(
+    #     endpoint=endpoint,
+    #     credential=DefaultAzureCredential(
+    #         exclude_interactive_browser_credential=False),
+    #     credential_scopes=["https://cognitiveservices.azure.com/.default"],
+    #     api_version="2023-05-15",
+    #     logging_enable=True,
+    # )
+    # response = client.embed(input=queries)
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
-    response = client.embed(input=queries)
+    response = client.embeddings.create(model=os.getenv(
+        "AZURE_EMBEDDING_NAME"), input=queries)
+
     embs = [emb.embedding for emb in response.data]
     items = [{"item": queries[i], "embedding": embs[i]}
              for i in range(len(queries))]
@@ -87,13 +96,20 @@ def find_products(context: str) -> Dict[str, any]:
     endpoint = "{}openai/deployments/{}".format(
         os.environ['AZURE_OPENAI_ENDPOINT'], os.environ['AZURE_OPENAI_CHAT_DEPLOYMENT'])
 
-    client = ChatCompletionsClient(
-        endpoint=endpoint,
-        credential=DefaultAzureCredential(
-            exclude_interactive_browser_credential=False),
-        credential_scopes=["https://cognitiveservices.azure.com/.default"],
-        api_version="2023-03-15-preview",
-        logging_enable=True,
+    # client = ChatCompletionsClient(
+    #     endpoint=endpoint,
+    #     credential=DefaultAzureCredential(
+    #         exclude_interactive_browser_credential=False),
+    #     credential_scopes=["https://cognitiveservices.azure.com/.default"],
+    #     api_version="2023-03-15-preview",
+    #     logging_enable=True,
+    # )
+
+    # Azure OpenAI
+    client = AzureOpenAI(
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
     )
 
     # Get the base directory (the directory of the current file)
@@ -116,11 +132,16 @@ def find_products(context: str) -> Dict[str, any]:
 
     try:
         with tracer.start_as_current_span("llm", attributes={"task": "find_products"}):
-            response = client.complete(
-                messages=[
+            # response = client.complete(
+            #     messages=[
+            #         SystemMessage(content=rendered_template),
+            #         UserMessage(content=context),
+            #     ]
+            # )
+            response = client.chat.completions.create(
+                model=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"), messages=[
                     SystemMessage(content=rendered_template),
-                    UserMessage(content=context),
-                ]
+                    UserMessage(content=context),]
             )
 
             queries = response.choices[0].message.content
