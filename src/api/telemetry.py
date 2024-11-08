@@ -198,8 +198,8 @@ def setup_telemetry(app: FastAPI):
         elif application_insights_connection_string:
             project_client.telemetry.enable(destination=None)
             configure_azure_monitor(connection_string=application_insights_connection_string)            
-            event_provider = EventLoggerProvider()
-            set_event_logger_provider(event_provider)    
+            # event_provider = EventLoggerProvider()
+            # set_event_logger_provider(event_provider)    
             
       
     # Set up exporters
