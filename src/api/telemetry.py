@@ -116,11 +116,11 @@ def setup_telemetry(app: FastAPI):
             exit()
         
         if local_tracing_enabled and local_tracing_enabled.lower() == "true":
-            project_client.telemetry.enable(destination=otel_exporter_endpoint)            
+            project_client.telemetry.enable(destination=otel_exporter_endpoint) 
         elif application_insights_connection_string:
             project_client.telemetry.enable(destination=None)
             configure_azure_monitor(connection_string=application_insights_connection_string)
-            # if using 
+            
             
         event_provider = EventLoggerProvider()
         set_event_logger_provider(event_provider)            
