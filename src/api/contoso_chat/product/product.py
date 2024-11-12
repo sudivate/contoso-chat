@@ -24,19 +24,23 @@ tracer = trace.get_tracer(__name__)
 def generate_embeddings(queries: List[str]) -> str:
     endpoint = "{}openai/deployments/{}".format(
         os.environ['AZURE_OPENAI_ENDPOINT'], os.environ['AZURE_EMBEDDING_NAME'])
-
-    client = EmbeddingsClient(
-        endpoint=endpoint,
-        credential=DefaultAzureCredential(
-            exclude_interactive_browser_credential=False),
-        credential_scopes=["https://cognitiveservices.azure.com/.default"],
-        api_version="2023-05-15",
-        logging_enable=True,
-    )
-    response = client.embed(input=queries)
-    embs = [emb.embedding for emb in response.data]
-    items = [{"item": queries[i], "embedding": embs[i]}
-             for i in range(len(queries))]
+    with tracer.start_as_current_span("embeddings") as span:
+        client = EmbeddingsClient(
+            endpoint=endpoint,
+            credential=DefaultAzureCredential(
+                exclude_interactive_browser_credential=False),
+            credential_scopes=["https://cognitiveservices.azure.com/.default"],
+            api_version="2023-05-15",
+            logging_enable=True,
+        )
+        response = client.embed(input=queries)
+        embs = [emb.embedding for emb in response.data]
+        items = [{"item": queries[i], "embedding": embs[i]}
+                for i in range(len(queries))]
+        
+        # Add span events with query and embeddings
+        span.add_event("gen_ai.embeddings.query",attributes={"gen_ai.event.content": json.dumps(queries)},)
+        span.add_event("gen_ai.embeddings.vectors",attributes={"gen_ai.event.content": json.dumps(queries)},)
 
     return items
 

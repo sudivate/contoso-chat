@@ -13,6 +13,7 @@ from opentelemetry import trace
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware    
 from opentelemetry._events import EventLogger, Event, get_event_logger
+import json
 
 
 from contoso_chat.chat_request import get_response, provide_feedback
@@ -105,10 +106,14 @@ def create_response(chat_request: ChatRequestModel, response: Response) -> dict:
                      "answer": result['answer'], "context": result['context']}
     
     
-    # Emit events with input, output and context
-    eventlogger.emit(event=Event(name="gen_ai.app.input", body=result['question']))
-    eventlogger.emit(event=Event(name="gen_ai.app.output", body=result['answer']))
-    eventlogger.emit(event=Event(name="gen_ai.app.context", body=result['context']))    
+    # Add span events with input, output and context
+    span.add_event("gen_ai.app.input",attributes={"gen_ai.app.event.content": json.dumps(result['question'])},)
+    span.add_event("gen_ai.app.output",attributes={"gen_ai.app.event.content": json.dumps(result['answer'])},)
+    span.add_event("gen_ai.app.context",attributes={"gen_ai.app.event.content": json.dumps(result['context'])},)
+    # Emit log events with input, output and context
+    # eventlogger.emit(event=Event(name="gen_ai.app.input", body=result['question']))
+    # eventlogger.emit(event=Event(name="gen_ai.app.output", body=result['answer']))
+    # eventlogger.emit(event=Event(name="gen_ai.app.context", body=result['context']))    
     
     return response_body
 
