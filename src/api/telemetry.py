@@ -11,7 +11,7 @@ from opentelemetry.sdk._logs import (
     LoggingHandler,
 )
 from opentelemetry._logs import set_logger_provider
-from opentelemetry._events import set_event_logger_provider
+from opentelemetry._events import set_event_logger_provider, EventLogger, Event
 from opentelemetry.sdk._events import EventLoggerProvider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk.metrics import MeterProvider
@@ -94,6 +94,7 @@ def setup_otlp_traces_exporter(endpoint: str):
     logging.getLogger().addHandler(handler)
 
 
+
 def setup_telemetry(app: FastAPI):
     settings.tracing_implementation = "OpenTelemetry"
     local_tracing_enabled=os.getenv("LOCAL_TRACING_ENABLED")
@@ -120,8 +121,9 @@ def setup_telemetry(app: FastAPI):
             project_client.telemetry.enable(destination=None)
             configure_azure_monitor(connection_string=application_insights_connection_string)
             # if using 
-            # event_provider = EventLoggerProvider()
-            # set_event_logger_provider(event_provider)    
+            event_provider = EventLoggerProvider()
+            set_event_logger_provider(event_provider)
+            
             
       
     # Set up exporters
