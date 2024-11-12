@@ -11,7 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import metrics
 from opentelemetry import trace
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware    
+from opentelemetry._events import EventLogger, Event, get_event_logger
+
 
 from contoso_chat.chat_request import get_response, provide_feedback
 from telemetry import setup_telemetry
@@ -52,12 +54,15 @@ setup_telemetry(app)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+tracer = trace.get_tracer(__name__)
+eventlogger= get_event_logger(__name__)
+
 
 # sample metrics, this can be removed for something more meaningful later
 meter = metrics.get_meter_provider().get_meter("contoso-chat")
 root_counter = meter.create_counter("root-hits")
 
-tracer = trace.get_tracer(__name__)
+
 
 
 class APIException(Exception):
@@ -85,10 +90,12 @@ async def root():
 def create_response(chat_request: ChatRequestModel, response: Response) -> dict:
     span = trace.get_current_span()
     span.set_attribute("session.id", chat_request.session_id)
+    span.set_attribute("gen_ai.app.operation", "create_response")
 
     try:
         result, metadata = get_response(
-            chat_request.customer_id, chat_request.question, chat_request.chat_history)
+            chat_request.customer_id, chat_request.question, chat_request.chat_history)        
+        
     except Exception as e:
         raise APIException()
 
@@ -96,6 +103,13 @@ def create_response(chat_request: ChatRequestModel, response: Response) -> dict:
     response.headers.append("gen_ai.response.model", metadata['model'])
     response_body = {"question": result['question'],
                      "answer": result['answer'], "context": result['context']}
+    
+    
+    # Emit events with input, output and context
+    eventlogger.emit(event=Event(name="gen_ai.app.input", body=result['question']))
+    eventlogger.emit(event=Event(name="gen_ai.app.output", body=result['answer']))
+    eventlogger.emit(event=Event(name="gen_ai.app.context", body=result['context']))    
+    
     return response_body
 
 
