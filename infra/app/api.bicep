@@ -18,6 +18,9 @@ param cosmosContainerName string
 param aiSearchEndpoint string
 param aiSearchIndexName string
 param appinsights_Connectionstring string
+param aiProjectName string
+param subscriptionId string
+
 
 
 module app '../core/host/container-app-upsert.bicep' = {
@@ -78,6 +81,26 @@ module app '../core/host/container-app-upsert.bicep' = {
       {
         name: 'APPINSIGHTS_CONNECTIONSTRING'
         value: appinsights_Connectionstring
+      }
+      {
+        name: 'AZURE_AI_PROJECT_NAME'
+        value: aiProjectName
+      }
+      {
+        name: 'AZURE_LOCATION'
+        value: location
+      }
+      {
+        name: 'AZURE_SUBSCRIPTION_ID'
+        value: subscriptionId
+      }
+      {
+        name: 'AZURE_RESOURCE_GROUP'
+        value: resourceGroup().name
+      }
+      {
+        name: 'AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED'
+        value: 'true'
       }
     ]
     targetPort: 80

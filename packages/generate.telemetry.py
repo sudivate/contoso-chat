@@ -66,10 +66,11 @@ def generate_feedback(response_id: str):
 
 def submit_eval(response_id: str):
     evalscores = ["gen_ai.evaluation.groundedness",
-                  "gen_ai.evaluation.coherence", "gen_ai.evaluation.relevance"]
+                  "gen_ai.evaluation.coherence", "gen_ai.evaluation.relevance", "gen_ai.evaluation.friendliness"]
 
     for score in evalscores:
         eval = {"gen_ai.response.id": response_id,
+                # [1, 2, 3, 4, 5]
                 "gen_ai.evaluation.score": random.choice([1, 2, 3, 4, 5]),
                 "event.name": score,
                 }
@@ -92,9 +93,6 @@ async def main():
             response_id.append(response.headers.get('gen_ai.response.id'))
             print(response)
 
-        # response_id = ['chatcmpl-ACEQtl2nQA5vSm9mA7WT7iE2WIT7S', 'chatcmpl-ACEQlESuI0IHHbV10ZtTVpMqCAjUE', 'chatcmpl-ACEQaWvVFgkMB83gOjH7zbWxL3al6',
-        #                'chatcmpl-ACEQTxQi0oOnvtYqxFndgExr4Hxf4', 'chatcmpl-ACEQLtT0NyJjwDt9OsVZ0m1chzh8Q', 'chatcmpl-ACDqxRhDu1N9jZSQZbhhWVIVgcbZD']
-
         # For each response id, generate feedback
         submit_feedback_tasks = [make_post_request(
             session, give_feedback, generate_feedback(response_id[i])) for i in range(len(response_id))]
@@ -103,7 +101,7 @@ async def main():
         for response in user_feedback:
             print(response)
 
-         # For each response id, generate feedback
+        # For each response id, generate feedback
 
         for response in response_id:
             submit_eval(response)

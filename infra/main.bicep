@@ -219,6 +219,8 @@ module api 'app/api.bicep' = {
     cosmosDatabaseName: cosmosDatabaseName
     cosmosContainerName: cosmosContainerName
     appinsights_Connectionstring: ai.outputs.applicationInsightsConnectionString
+    aiProjectName: ai.outputs.projectName
+    subscriptionId: subscription().subscriptionId
   }
 }
 

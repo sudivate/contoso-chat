@@ -36,11 +36,13 @@ def generate_embeddings(queries: List[str]) -> str:
         response = client.embed(input=queries)
         embs = [emb.embedding for emb in response.data]
         items = [{"item": queries[i], "embedding": embs[i]}
-                for i in range(len(queries))]
-        
+                 for i in range(len(queries))]
+
         # Add span events with query and embeddings
-        span.add_event("gen_ai.embedding.query",attributes={"gen_ai.event.content": json.dumps(queries)},)
-        span.add_event("gen_ai.embedding.vectors",attributes={"gen_ai.event.content": json.dumps(queries)},)
+        span.add_event("gen_ai.embedding.query", attributes={
+                       "gen_ai.event.content": json.dumps(queries)},)
+        span.add_event("gen_ai.embedding.vectors", attributes={
+                       "gen_ai.event.content": json.dumps(items)},)
 
     return items
 

@@ -20,11 +20,10 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry import trace 
+from opentelemetry import trace
 from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential    
+from azure.identity import DefaultAzureCredential
 from azure.monitor.opentelemetry import configure_azure_monitor
-
 
 
 def setup_azure_monitor_exporters(conn_str: str):
@@ -94,42 +93,45 @@ def setup_otlp_traces_exporter(endpoint: str):
     logging.getLogger().addHandler(handler)
 
 
-
 def setup_telemetry(app: FastAPI):
     settings.tracing_implementation = "OpenTelemetry"
-    local_tracing_enabled=os.getenv("LOCAL_TRACING_ENABLED")
-    app_insights_conn_str = os.getenv("APPINSIGHTS_CONNECTIONSTRING")
+    local_tracing_enabled = os.getenv("LOCAL_TRACING_ENABLED")
+    application_insights_connection_string = os.getenv(
+        "APPINSIGHTS_CONNECTIONSTRING")
     otel_exporter_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    # Configure OpenTelemetry using Azure AI Project 
-    ai_project_conn_str = os.getenv("AZURE_LOCATION")+".api.azureml.ms;"+os.getenv("AZURE_SUBSCRIPTION_ID")+";"+os.getenv("AZURE_RESOURCE_GROUP")+";"+os.getenv("AZURE_AI_PROJECT_NAME")
 
-   
-    with AIProjectClient.from_connection_string(
-    credential=DefaultAzureCredential(),
-    conn_str=ai_project_conn_str,
-    ) as project_client:
-        
-        application_insights_connection_string = project_client.telemetry.get_connection_string()
-        if not application_insights_connection_string:
-            print("Application Insights was not enabled for this project.")
-            print("Enable it via the 'Tracing' tab in your AI Studio project page.")
-            exit()
-        
-        if local_tracing_enabled and local_tracing_enabled.lower() == "true":
-            project_client.telemetry.enable(destination=otel_exporter_endpoint) 
-        elif application_insights_connection_string:
-            project_client.telemetry.enable(destination=None)
-            configure_azure_monitor(connection_string=application_insights_connection_string)
-            
-            
-        event_provider = EventLoggerProvider()
-        set_event_logger_provider(event_provider)            
-      
-    # Set up exporters
-    # if app_insights_conn_str:
-    #     setup_azure_monitor_exporters(conn_str=app_insights_conn_str)
-    # elif otel_exporter_endpoint:
-    #     setup_otlp_traces_exporter(endpoint=otel_exporter_endpoint)
+    FastAPIInstrumentor.instrument_app(app, exclude_spans=["send"])
 
-    # Instrument FastAPI
-    FastAPIInstrumentor.instrument_app(app)
+    # Configure OpenTelemetry using Azure AI Project
+    ai_project_conn_str = os.getenv("AZURE_LOCATION")+".api.azureml.ms;"+os.getenv(
+        "AZURE_SUBSCRIPTION_ID")+";"+os.getenv("AZURE_RESOURCE_GROUP")+";"+os.getenv("AZURE_AI_PROJECT_NAME")
+
+    from azure.ai.inference.tracing import AIInferenceInstrumentor
+    instrumentor = AIInferenceInstrumentor()
+    configure_azure_monitor(
+        connection_string=application_insights_connection_string)
+
+    # # Azure AI Project
+    # with AIProjectClient.from_connection_string(
+    #     credential=DefaultAzureCredential(),
+    #     conn_str=ai_project_conn_str,
+    # ) as project_client:
+
+    #     application_insights_connection_string = project_client.telemetry.get_connection_string()
+    #     application_insights_connection_string = os.getenv(
+    #         "APPINSIGHTS_CONNECTIONSTRING")  # remove this line
+    #     if not application_insights_connection_string:
+    #         print("Application Insights was not enabled for this project.")
+    #         print("Enable it via the 'Tracing' tab in your AI Studio project pa/workspaces/contoso-chat/node_modulesge.")
+    #         exit()
+
+    #     if local_tracing_enabled and local_tracing_enabled.lower() == "true":
+    #         project_client.telemetry.enable(destination=otel_exporter_endpoint)
+    #     elif application_insights_connection_string:
+    #         project_client.telemetry.enable(destination=None)
+    #         configure_azure_monitor(
+    #             connection_string=application_insights_connection_string)
+
+    # Setup OTEL Log provider for log events
+    event_provider = EventLoggerProvider()
+    set_event_logger_provider(event_provider)
